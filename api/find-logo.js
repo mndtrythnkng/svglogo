@@ -20,12 +20,12 @@ module.exports = async (req, res) => {
     const logoLinks = [];
     $('img, link').each((_, el) => {
       const src = $(el).attr('src') || $(el).attr('href');
-      if (src && src.toLowerCase().includes('logo') && src.toLowerCase().endsWith('.svg')) {
+      if (src && src.toLowerCase().endsWith('.svg')) {
         const absoluteUrl = new URL(src, baseUrl).href;
         logoLinks.push(absoluteUrl);
       }
     });
-
+    
     if (logoLinks.length > 0) {
       return res.json({ found: true, links: logoLinks });
     }
