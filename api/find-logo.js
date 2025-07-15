@@ -25,18 +25,26 @@ module.exports = async (req, res) => {
         logoLinks.push(absoluteUrl);
       }
     });
-    
+
     if (logoLinks.length > 0) {
       return res.json({ found: true, links: logoLinks });
     }
 
     const dom = new JSDOM(html);
     const inlineSVGs = Array.from(dom.window.document.querySelectorAll('svg'));
+
+    inlineSVGs.forEach(svg => {
+      // Patch missing viewBox if width and height are present
+      if (!svg.hasAttribute('viewBox') && svg.getAttribute('width') && svg.getAttribute('height')) {
+        svg.setAttribute(
+          'viewBox',
+          `0 0 ${svg.getAttribute('width')} ${svg.getAttribute('height')}`
+        );
+      }
+    });
+
     if (inlineSVGs.length > 0) {
-      const svgStrings = inlineSVGs.map((svg, i) => {
-        // Serialize full outerHTML
-        return svg.outerHTML.trim();
-      });
+      const svgStrings = inlineSVGs.map(svg => svg.outerHTML.trim());
       return res.json({ foundInline: true, svgs: svgStrings });
     }
 
