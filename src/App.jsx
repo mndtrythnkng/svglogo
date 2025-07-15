@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import axios from 'axios';
 
 function App() {
   const [url, setUrl] = useState('');
@@ -10,17 +9,25 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setResults(null);
-
+  
     try {
-      const res = await axios.post('/api/find-logo', { url });
-      console.log('API response:', res.data);
-      setResults(res.data);
+      const res = await fetch('/api/find-logo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+  
+      const data = await res.json();
+      console.log('API response:', data); // 👈 Place this here
+      setResults(data);
+  
     } catch (err) {
       console.error(err);
       setResults({ error: 'Failed to fetch data' });
     }
-    setLoading(false);
-  };
+
+  setLoading(false);
+};
 
   return (
     <div style={{ maxWidth: 600, margin: '2rem auto', fontFamily: 'Arial' }}>

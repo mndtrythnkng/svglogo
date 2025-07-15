@@ -1,6 +1,5 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const { JSDOM } = require('jsdom');
+const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -10,47 +9,40 @@ module.exports = async (req, res) => {
 
   const { url } = req.body;
 
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return res.status(400).json({ error: 'Invalid or missing URL.' });
+  }
+
   try {
-    const response = await axios.get(url);
-    const html = response.data;
-    const $ = cheerio.load(html);
+    console.log('Requested URL:', url);
 
-    const baseUrl = new URL(url);
+    const execPath = (await chromium.executablePath) || '/usr/bin/chromium-browser';
 
-    const logoLinks = [];
-    $('img, link').each((_, el) => {
-      const src = $(el).attr('src') || $(el).attr('href');
-      if (src && src.toLowerCase().endsWith('.svg')) {
-        const absoluteUrl = new URL(src, baseUrl).href;
-        logoLinks.push(absoluteUrl);
-      }
+    console.log('Launching browser with executablePath:', execPath);
+
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: execPath,
+      headless: chromium.headless !== false
     });
 
-    if (logoLinks.length > 0) {
-      return res.json({ found: true, links: logoLinks });
-    }
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
 
-    const dom = new JSDOM(html);
-    const inlineSVGs = Array.from(dom.window.document.querySelectorAll('svg'));
+    const svgHTMLs = await page.$$eval('svg', svgs =>
+      svgs.map(svg => svg.outerHTML.trim())
+    );
 
-    inlineSVGs.forEach(svg => {
-      // Patch missing viewBox if width and height are present
-      if (!svg.hasAttribute('viewBox') && svg.getAttribute('width') && svg.getAttribute('height')) {
-        svg.setAttribute(
-          'viewBox',
-          `0 0 ${svg.getAttribute('width')} ${svg.getAttribute('height')}`
-        );
-      }
-    });
+    await browser.close();
 
-    if (inlineSVGs.length > 0) {
-      const svgStrings = inlineSVGs.map(svg => svg.outerHTML.trim());
-      return res.json({ foundInline: true, svgs: svgStrings });
+    if (svgHTMLs.length > 0) {
+      return res.json({ foundInline: true, svgs: svgHTMLs });
     }
 
     return res.json({ found: false, message: 'No SVG logos could be found on this page.' });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error('Server error:', err);
     return res.status(500).json({ error: 'Failed to fetch or parse the page.' });
   }
 };
