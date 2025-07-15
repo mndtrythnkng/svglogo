@@ -13,6 +13,7 @@ function App() {
 
     try {
       const res = await axios.post('/api/find-logo', { url });
+      console.log('API response:', res.data);
       setResults(res.data);
     } catch (err) {
       console.error(err);
