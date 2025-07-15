@@ -9,21 +9,22 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setResults(null);
-
+  
     try {
       const res = await fetch('/api/find-logo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
-
+  
       const data = await res.json();
+      console.log('API response:', data); // 👈 Place this here
       setResults(data);
-
+  
     } catch (err) {
       console.error(err);
       setResults({ error: 'Failed to fetch data' });
-  }
+    }
 
   setLoading(false);
 };
