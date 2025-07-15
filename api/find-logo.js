@@ -9,12 +9,22 @@ module.exports = async (req, res) => {
 
   const { url } = req.body;
 
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return res.status(400).json({ error: 'Invalid or missing URL.' });
+  }
+
   try {
+    console.log('Requested URL:', url);
+
+    const execPath = (await chromium.executablePath) || '/usr/bin/chromium-browser';
+
+    console.log('Launching browser with executablePath:', execPath);
+
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless
+      executablePath: execPath,
+      headless: chromium.headless !== false
     });
 
     const page = await browser.newPage();
@@ -32,7 +42,7 @@ module.exports = async (req, res) => {
 
     return res.json({ found: false, message: 'No SVG logos could be found on this page.' });
   } catch (err) {
-    console.error(err);
+    console.error('Server error:', err);
     return res.status(500).json({ error: 'Failed to fetch or parse the page.' });
   }
 };
