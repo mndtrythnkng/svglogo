@@ -12,7 +12,7 @@ function App() {
     setResults(null);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/find-logo', { url });
+      const res = await axios.post('/api/find-logo', { url });
       setResults(res.data);
     } catch (err) {
       console.error(err);
