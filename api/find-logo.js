@@ -31,11 +31,11 @@ module.exports = async (req, res) => {
     }
 
     const dom = new JSDOM(html);
-    const inlineSVGs = dom.window.document.querySelectorAll('svg');
+    const inlineSVGs = Array.from(dom.window.document.querySelectorAll('svg'));
     if (inlineSVGs.length > 0) {
-      const svgStrings = [];
-      inlineSVGs.forEach((svg) => {
-        svgStrings.push(svg.outerHTML);
+      const svgStrings = inlineSVGs.map((svg, i) => {
+        // Serialize full outerHTML
+        return svg.outerHTML.trim();
       });
       return res.json({ foundInline: true, svgs: svgStrings });
     }
